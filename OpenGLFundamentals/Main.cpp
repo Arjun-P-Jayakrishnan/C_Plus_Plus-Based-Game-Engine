@@ -2,29 +2,41 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include <stb/stb_image.h>
+#include<glm/glm.hpp>
+#include<glm/gtc/matrix_transform.hpp>
+#include<glm/gtc/type_ptr.hpp>
 
 #include "shaderClass.h"
 #include "VBO.h"
 #include "EBO.h"
 #include "VAO.h"
 #include "Texture.h"
+#include "Camera.h"
 
 
 
 GLfloat vertices[] = {
 	//COORDINATES                   // COLORS		       //TEXTURE
-	-0.5f,		-0.5f,		0.0f,	1.0f,	0.0f,	0.0f,	0.0f,	0.0f,
-	-0.5f,		 0.5f,		0.0f,	0.0f,	1.0f,	0.0f,	0.0f,	1.0f,
-	 0.5f,		 0.5f,		0.0f,	0.0f,	0.0f,	1.0f,	1.0f,	1.0f,
-	 0.5f,		-0.5f,		0.0f,	1.0f,	1.0f,	1.0f,	1.0f,	0.0f
+	-0.5f,		0.0f,		 0.5f,	0.83f,	0.70f,	0.44f,	0.0f,	0.0f,
+	-0.5f,		0.0f,		-0.5f,	0.83f,	0.70f,	0.44f,	5.0f,	0.0f,
+	 0.5f,		0.0f,		-0.5f,	0.83f,	0.70f,	0.44f,	0.0f,	0.0f,
+	 0.5f,		0.0f,		 0.5f,	0.83f,	0.70f,	0.44f,	5.0f,	0.0f ,
+	 0.0f,		0.8f,		 0.0f,	0.92f,	0.86f,	0.76f,	2.5f,	5.0f
 };
 
 GLuint indices[] = {
 
-		0,2,1,//Lower left triangle
-		0,3,2,//Lower right triangle
+		0,1,2,
+		0,2,3,
+		0,1,4,
+		1,2,4,
+		2,3,4,
+		3,0,4
 
 };
+
+unsigned int width = 800;
+unsigned int height = 800;
 
 int main() {
 
@@ -39,7 +51,7 @@ int main() {
 
 
 
-	GLFWwindow* window = glfwCreateWindow(800, 800, "Opengl Programming", NULL,NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "Opengl Programming", NULL,NULL);
 
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -54,7 +66,7 @@ int main() {
 
 	//Specify the viewport of OpenGl in window
 	//In this case it goes from 0,0 to 800,800
-	glViewport(0,0,800,800);
+	glViewport(0,0,width,height);
 
 	Shader shaderProgram("default.vert", "default.frag");
 	VAO VAO1;
@@ -81,16 +93,29 @@ int main() {
 	//Clean the back buffer and assign the new color to it
 	glClear(GL_COLOR_BUFFER_BIT);
 	glfwSwapBuffers(window);
+
+	float rotation = 0.0f;
+	double prevTime = glfwGetTime();
+
+	glEnable(GL_DEPTH_TEST);
+
+	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 	
 	//Run until close button is pressed
 	while (!glfwWindowShouldClose(window)) {
 		//Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean teh back buffer and assign the new color to it
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 		//Tell OpenGl which shader program we want to use
 		shaderProgram.Activate();
+
+		
+		camera.Matrix(45.0f,0.1f,100.0f,shaderProgram,"camMatrix");
+
+		camera.Inputs(window);
+
 		//Assign a new value to a uniform ;Note this must always be done after activating the shader program
 		glUniform1f(uniID,0.5f);
 		//bind the texture
@@ -101,7 +126,7 @@ int main() {
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//Draw Primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
 
 		//Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
