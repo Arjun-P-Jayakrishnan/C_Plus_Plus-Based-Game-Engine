@@ -46,7 +46,7 @@ void Texture::free_image(unsigned char* imageBytes) {
 }
 
 
-void Texture::texUnit(Shader shader, const char* uniform, GLuint uint) {
+void Texture::texUnit(Shader& shader, const char* uniform, GLuint uint) {
 	
 	GLuint tex0Uni = glGetUniformLocation(shader.ID, uniform);
 	shader.Activate();
