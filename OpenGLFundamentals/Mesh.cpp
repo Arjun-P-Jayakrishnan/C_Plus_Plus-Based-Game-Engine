@@ -26,7 +26,14 @@ Mesh::Mesh(std::vector <Vertex>& vertices,std::vector <GLuint>& indices,std::vec
 	EBO.Unbind();
 }
 
-void Mesh::Draw(Shader& shader,Camera& camera) {
+void Mesh::Draw(
+	Shader& shader,
+	Camera& camera,
+	glm::mat4 matrix,
+	glm::vec3 translation,
+	glm::quat rotation,
+	glm::vec3 scaling
+) {
 
 	//Bind the shader to acces it contents
 	shader.Activate();
@@ -53,6 +60,19 @@ void Mesh::Draw(Shader& shader,Camera& camera) {
 	
 	}
 
+	glm::mat4 trans = glm::mat4(1.0);
+	glm::mat4 rot = glm::mat4(1.0);
+	glm::mat4 sca = glm::mat4(1.0);
+	
+	trans= glm::translate(trans, translation);
+	rot = glm::mat4_cast(rotation);
+	sca = glm::scale(sca, scaling);
+
+
+	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "translation"), 1, GL_FALSE, glm::value_ptr(trans));
+	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "rotation"), 1, GL_FALSE, glm::value_ptr(rot));
+	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "scale"), 1, GL_FALSE, glm::value_ptr(sca));
+	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(matrix));
 	//Take Care of the Camera Matrix
 	glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 	camera.Matrix(shader,"camMatrix");
