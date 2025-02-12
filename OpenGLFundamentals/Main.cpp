@@ -6,32 +6,51 @@
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 
-#include "shaderClass.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "VAO.h"
-#include "Texture.h"
-#include "Camera.h"
+#include "Mesh.h"
 
 
 
-GLfloat vertices[] = {
-	//COORDINATES                   // COLORS		       //TEXTURE
-	-0.5f,		0.0f,		 0.5f,	0.83f,	0.70f,	0.44f,	0.0f,	0.0f,
-	-0.5f,		0.0f,		-0.5f,	0.83f,	0.70f,	0.44f,	5.0f,	0.0f,
-	 0.5f,		0.0f,		-0.5f,	0.83f,	0.70f,	0.44f,	0.0f,	0.0f,
-	 0.5f,		0.0f,		 0.5f,	0.83f,	0.70f,	0.44f,	5.0f,	0.0f ,
-	 0.0f,		0.8f,		 0.0f,	0.92f,	0.86f,	0.76f,	2.5f,	5.0f
+Vertex vertices[] = {
+			//COORDINATES						//NORMALS					//COLOR						//TEXTURE
+	Vertex{ glm::vec3( - 1.0f,	0.0f,	 1.0f),	glm::vec3(0.0f, 1.0f,0.0f),	glm::vec3(0.0f,0.0f,0.0f),  glm::vec2(0.0f,0.0f),		},
+	Vertex{ glm::vec3(-1.0f,	0.0f,	-1.0f), glm::vec3(0.0f, 1.0f,0.0f),	glm::vec3(0.0f,0.0f,0.0f),	glm::vec2(0.0f,1.0f),		},	
+	Vertex{ glm::vec3( 1.0f,	0.0f,	-1.0f),	glm::vec3(0.0f, 1.0f,0.0f), glm::vec3(0.0f,0.0f,0.0f),	glm::vec2(1.0f,1.0f),		},
+	Vertex{ glm::vec3(1.0f,		0.0f,	 1.0f),	glm::vec3(0.0f, 1.0f,0.0f),	glm::vec3(0.0f,0.0f,0.0f),	glm::vec2(1.0f,0.0f),		}
 };
 
 GLuint indices[] = {
 
-		0,1,2,
-		0,2,3,
-		0,1,4,
-		1,2,4,
-		2,3,4,
-		3,0,4
+		0,1,2,//Bottom side
+		0,2,3,//Bottom side
+
+};
+
+Vertex lightVertices[] = {
+	//Coordinates
+	Vertex{glm::vec3( - 0.1f,-0.1f, 0.1f)},
+	Vertex{glm::vec3(-0.1f,-0.1f,-0.1f)},
+	Vertex{glm::vec3(0.1f,-0.1f,-0.1f)},
+	Vertex{glm::vec3(0.1f,-0.1f, 0.1f)},
+
+	Vertex{glm::vec3(-0.1f, 0.1f, 0.1f)},
+	Vertex{glm::vec3(-0.1f, 0.1f,-0.1f)},
+	Vertex{glm::vec3(0.1f, 0.1f,-0.1f)},
+	Vertex{glm::vec3(0.1f, 0.1f, 0.1f)},
+};
+
+GLuint lightIndices[] = {
+	0,1,2,
+	0,2,3,
+	0,4,7,
+	0,7,3,
+	3,7,6,
+	3,6,2,
+	2,6,5,
+	2,5,1,
+	1,5,4,
+	1,4,0,
+	4,5,6,
+	4,6,7
 
 };
 
@@ -67,25 +86,55 @@ int main() {
 	//Specify the viewport of OpenGl in window
 	//In this case it goes from 0,0 to 800,800
 	glViewport(0,0,width,height);
+	
 
+	Texture textures[]{
+		Texture("planks.png","diffuse",0,GL_RGBA,GL_UNSIGNED_BYTE),
+		Texture("planksSpec.png", "specular", 1, GL_RED, GL_UNSIGNED_BYTE)
+	};
+
+
+	//Generates shader object using default.vert and default.frag
 	Shader shaderProgram("default.vert", "default.frag");
-	VAO VAO1;
-	VAO1.Bind();
 
-	VBO VBO1(vertices, sizeof(vertices));
-	EBO EBO1(indices, sizeof(indices));
+	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
+	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
+	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
 
-	VAO1.LinkAttrib(VBO1, 0,3,GL_FLOAT,8*sizeof(float),(void*)0);
-	VAO1.LinkAttrib(VBO1, 1,3,GL_FLOAT,8*sizeof(float),(void*)(3*sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 2,2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	VAO1.Unbind();
-	VBO1.Unbind();
-	EBO1.Unbind();
+	//Create the Mesh
+	Mesh floor(verts, ind, tex);
 
-	GLuint uniID = glGetUniformLocation(shaderProgram.ID,"scale");
 
-	Texture manTexture("man.png",GL_TEXTURE_2D,GL_TEXTURE0,GL_RGBA,GL_UNSIGNED_BYTE);
-	manTexture.texUnit(shaderProgram,"tex0",0);
+	Shader lightShader("light.vert","light.frag");
+	std::vector <Vertex> vertLight(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
+	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
+	
+
+	//Create Light Mesh
+	Mesh lightSource(vertLight, lightInd, tex);
+
+
+	glm::vec4 lightColor = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+	glm::vec3 lightPos = glm::vec3(0.5f,0.5f,0.5f);
+	glm::mat4 lightModel = glm::mat4(1.0f);
+	lightModel = glm::translate(lightModel, lightPos);
+
+	glm::vec3 objectPos = glm::vec3(0.0f,0.0f,0.0f);
+	glm::mat4 objectModel = glm::mat4(1.0f);
+	objectModel = glm::translate(objectModel,objectPos);
+
+	lightShader.Activate();
+	glUniformMatrix4fv(glGetUniformLocation(lightShader.ID,"model"),1,GL_FALSE,glm::value_ptr(lightModel));
+	glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"),lightColor.x,lightColor.y,lightColor.z,lightColor.w);
+
+
+	shaderProgram.Activate();
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
+	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z,lightColor.w);
+	glUniform3f(glGetUniformLocation(shaderProgram.ID,"lightPos"),lightPos.x,lightPos.y,lightPos.z);
+
+	
+
 	
 
 	//specify the background color
@@ -107,26 +156,16 @@ int main() {
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean teh back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-		//Tell OpenGl which shader program we want to use
-		shaderProgram.Activate();
-
-		
-		camera.Matrix(45.0f,0.1f,100.0f,shaderProgram,"camMatrix");
-
+	
+		//Handles Camera Inputs
 		camera.Inputs(window);
+		//Update Matrix
+		camera.updateMatrix(45.0f,0.1f,100.0f);
+		
+		floor.Draw(shaderProgram,camera);
+		lightSource.Draw(lightShader, camera);
+	
 
-		//Assign a new value to a uniform ;Note this must always be done after activating the shader program
-		glUniform1f(uniID,0.5f);
-		//bind the texture
-		manTexture.Bind();
-
-		//Bind the VAO so that OpenGL knows to use it
-		VAO1.Bind();
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		//Draw Primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
 
 		//Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
@@ -134,11 +173,10 @@ int main() {
 		glfwPollEvents();
 	}
 
-	VAO1.Delete();
-	VBO1.Delete();
-	EBO1.Delete();
-	manTexture.Delete();
+	
 	shaderProgram.Delete();
+	lightShader.Delete();
+
 	
 
 	//Delete the window before closing the program
