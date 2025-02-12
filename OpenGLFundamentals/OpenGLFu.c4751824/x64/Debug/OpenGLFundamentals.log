@@ -1,4 +1,6 @@
-﻿  Camera.cpp
-  Main.cpp
+﻿  Main.cpp
+  Mesh.cpp
+D:\Personal-Projects\CPP Game Development\OpenGLFundamentals\Mesh.cpp(62,42): warning C4267: 'argument': conversion from 'size_t' to 'GLsizei', possible loss of data
+  VBO.cpp
   Generating Code...
   OpenGLFundamentals.vcxproj -> D:\Personal-Projects\CPP Game Development\OpenGLFundamentals\x64\Debug\OpenGLFundamentals.exe
