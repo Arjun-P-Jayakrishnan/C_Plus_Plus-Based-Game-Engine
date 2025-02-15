@@ -15,6 +15,8 @@ Model::Model(const char* file) {
 }
 
 void Model :: Draw(Shader& shader, Camera& camera) {
+
+	//Go over all the meshes and draw each one
 	for (unsigned int i = 0; i < meshes.size(); i++) {
 		meshes[i].Mesh::Draw(shader,camera, matricesMeshes[i]);
 	
@@ -23,12 +25,13 @@ void Model :: Draw(Shader& shader, Camera& camera) {
 
 void Model::loadMesh(unsigned int indMesh) {
 	
-
+	//Get all accessor indices
 	unsigned int posAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["POSITION"];
 	unsigned int normalAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["NORMAL"];
 	unsigned int texAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["TEXCOORD_0"];
 	unsigned int indAccInd = JSON["meshes"][indMesh]["primitives"][0]["indices"];
 
+	//Use accessor indices to get all vertices components
 	std::vector<float> posVec = getFloats(JSON["accessors"][posAccInd]);
 	std::vector<glm::vec3> positions = groupFloatsVec3(posVec);
 
@@ -38,19 +41,27 @@ void Model::loadMesh(unsigned int indMesh) {
 	std::vector<float> texVec = getFloats(JSON["accessors"][texAccInd]);
 	std::vector<glm::vec2> texUVs = groupFloatsVec2(texVec);
 
+
+	//Combine all the vertex components and also get the indices and textures
 	std::vector<Vertex> vertices = assembleVertex(positions, normals, texUVs);
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 	std::vector<Texture> textures = getTextures();
 
+	for (unsigned int i = 0; i < texUVs.size(); i++) {
+		std::cout<<"texVec x" << texUVs[i].x <<"texUV y"<<texUVs[i].y << std::endl;
+	}
+
+	//Combine the vertices,indices,and textures into a mesh
 	meshes.push_back(Mesh(vertices,indices,textures));
 }
 
 void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
-
+	//current node
 	json node = JSON["nodes"][nextNode];
-	std::cout << "Still running" << nextNode << std::endl;
 
-	glm::vec3 translation = glm::vec3(0.0, 0.0, 0.0);
+
+	//Get translation if it exists
+	glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f);
 	if (node.find("translation") != node.end()) {
 		float transValues[3];
 
@@ -61,6 +72,8 @@ void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
 		translation = glm::make_vec3(transValues);
 	
 	}
+
+	//Get Quaternion if it exists
 	glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 	if (node.find("rotation") != node.end()) {
 		
@@ -76,6 +89,8 @@ void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
 		};
 		rotation = glm::make_quat(rotValues);
 	}
+
+	//Get scale if it exists
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	if (node.find("scale") != node.end()) {
 		
@@ -85,6 +100,8 @@ void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
 		}
 		scale = glm::make_vec3(scaleValues);
 	}
+
+	//Get Matrix if exists
 	glm::mat4 matNode = glm::mat4(1.0f);
 	if (node.find("matrix") != node.end()) {
 		float matValues[16];
@@ -95,17 +112,20 @@ void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
 		matNode = glm::make_mat4(matValues);
 	}
 
+	//Initializes the matrices
 	glm::mat4 trans = glm::mat4(1.0f);
 	glm::mat4 rot = glm::mat4(1.0f);
 	glm::mat4 sca = glm::mat4(1.0f);
 
-
+	//Use translation, rotation, and scale to chnage the initialized matrices
 	trans = glm::translate(trans, translation);
 	rot = glm::mat4_cast(rotation);
 	sca = glm::scale(sca, scale);
 
+	//Multiply all matrices together
 	glm::mat4 matNextNode = matrix * matNode * trans * rot * sca;
 
+	//Check if the node contains a mesh and if it does load it.
 	if (node.find("mesh")!= node.end()) {
 		translationsMeshes.push_back(translation);
 		rotationsMeshes.push_back(rotation);
@@ -115,6 +135,8 @@ void Model::traverseNode(unsigned int nextNode,glm::mat4 matrix) {
 		loadMesh(node["mesh"]);
 	}
 
+
+	//Check if the node has children, and if it does, apply thus function to them with the matNextNode
 	if (node.find("children") != node.end()) {
 		for (unsigned int i = 0; i < node["children"].size(); i++) {
 			traverseNode(node["children"][i], matNextNode);
@@ -375,7 +397,7 @@ std::vector<glm::vec4> Model::groupFloatsVec4(std::vector<float> floatVec) {
 		vectors.push_back(glm::vec4(0.0,0.0,0.0,0.0));
 
 		for (unsigned int j = 0; j < floatsPerVector; j++) {
-			vectors.back()[j] = floatVec[i + j];
+			vectors.back()[j] = floatVec[(i + j)];
 		}
 	}
 
