@@ -170,6 +170,10 @@
     <Image Include="C:\Users\arjun_l9z744m\Downloads\planks.png" />
     <Image Include="C:\Users\arjun_l9z744m\Downloads\planksSpec.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="outlining.vert" />
+    <Text Include="outlining.frag" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
