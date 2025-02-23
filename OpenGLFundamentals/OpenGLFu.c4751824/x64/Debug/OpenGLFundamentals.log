@@ -1,4 +1,2 @@
-﻿  Model.cpp
-D:\Personal-Projects\CPP Game Development\OpenGLFundamentals\Model.cpp(337,91): warning C4267: 'argument': conversion from 'size_t' to 'GLuint', possible loss of data
-D:\Personal-Projects\CPP Game Development\OpenGLFundamentals\Model.cpp(344,93): warning C4267: 'argument': conversion from 'size_t' to 'GLuint', possible loss of data
+﻿  Main.cpp
   OpenGLFundamentals.vcxproj -> D:\Personal-Projects\CPP Game Development\OpenGLFundamentals\x64\Debug\OpenGLFundamentals.exe

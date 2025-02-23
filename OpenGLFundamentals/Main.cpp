@@ -49,6 +49,8 @@ int main() {
 
 	//Generates shader object using default.vert and default.frag
 	Shader shaderProgram("default.vert", "default.frag");
+
+	Shader outliningProgram("outlining.vert","outlining.frag");
 	
 
 
@@ -75,6 +77,20 @@ int main() {
 
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	//enable writing to stencil buffer
+	glEnable(GL_STENCIL_TEST);
+	//when both stencil and depth pass we will use the value provided by glStencilFunc
+	glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+
+	//Face Culling
+	glEnable(GL_CULL_FACE);
+	//which face to keep
+	glCullFace(GL_FRONT);
+	//counter-clockwise for knowing which is front and back
+	glFrontFace(GL_CW);
+
 
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
@@ -84,22 +100,63 @@ int main() {
 	std::string modelPath = "D:/sword/scene.gltf";
 
 	Model model(modelPath.c_str());
+
+	double prevTime = 0.0;
+	double crntTime = 0.0;
+	double timeDiff;
+	unsigned int counter = 0;
 	
 	//Run until close button is pressed
 	while (!glfwWindowShouldClose(window)) {
+
+		crntTime = glfwGetTime();
+		timeDiff = crntTime - prevTime;
+		counter++;
+		if (timeDiff >= 1.0 / 30.0) {
+			std::string FPS = std::to_string((1.0 / timeDiff)*counter);
+
+			std::string ms = std::to_string((timeDiff/counter)*1000);
+			std::string newTitle = "OpenGL -" + FPS + " / " + ms+" ms";
+			glfwSetWindowTitle(window, newTitle.c_str());
+			prevTime = crntTime;
+			counter = 0;
+			//Handles Camera Inputs
+			camera.Inputs(window);
+		}
+
 		//Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean teh back buffer and assign the new color to it
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 	
-		//Handles Camera Inputs
-		camera.Inputs(window);
+		
 		//Update Matrix
 		camera.updateMatrix(45.0f,0.1f,100.0f);
 		
-		
+		//Stencil Test always passes
+		glStencilFunc(GL_ALWAYS,1,0XFF);
+		//enable writing to stencil buffers with stencil mask 0xFF
+		glStencilMask(0xFF);
 		model.Draw(shaderProgram, camera);
 
+		//Stencil Test pass only if value not equal to 1 i.e areas where previously values where 1 i guess
+		glStencilFunc(GL_NOTEQUAL,1,0XFF);
+		//disable writing to stencil mask
+		glStencilMask(0x00);
+		//disable depth test
+		glDisable(GL_DEPTH_TEST);
+
+
+		outliningProgram.Activate();
+		glUniform1f(glGetUniformLocation(outliningProgram.ID, "outlining"), 0.08f);
+		model.Draw(outliningProgram,camera);
+
+		//set stencil mask a 0xff similar to binding i.e keep that mask as current
+		glStencilMask(0xFF);
+		//replace its values as 0
+		glStencilFunc(GL_ALWAYS,0,0XFF);
+		//reenable depth test
+		glEnable(GL_DEPTH_TEST);
 
 		//Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
